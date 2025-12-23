@@ -1,0 +1,20 @@
+<% layout("/layouts/boilerplate") %>
+
+<h2 class="mb-4">🔥 Trending Stays</h2>
+<div class="row">
+  <% listings.forEach(listing => { %>
+    <div class="col-md-4 mb-4">
+      <div class="card shadow-sm">
+        <img src="<%= listing.image.url %>" class="card-img-top  show-img">
+        <div class="card-body">
+          <h5  class="card-text"><%= listing.title %></h5>
+          <p class="card-text">📍 <%= listing.location %></p>
+          <p  class="card-text">🔥 Score: <%= listing.trendingScore %></p>
+          <a href="/listings/<%= listing._id %>" class="btn btn-outline-dark">
+            View
+          </a>
+        </div>
+      </div>
+    </div>
+  <% }) %>
+</div>
