@@ -33,56 +33,6 @@ router.post("/signup", async (req, res, next) => {
   }
 });
 
-
-// router.post("/signup", async (req, res) => {
-//   try {
-//     console.log("SIGNUP DATA 👉", req.body);
-
-//     const { username, email, password } = req.body;
-
-//     const user = new User({ username, email });
-//     const registeredUser = await User.register(user, password);
-
-//     req.login(registeredUser, (err) => {
-//       console.log("LOGIN ERROR ❌", err.message);
-//       req.flash("error", "Auto login failed. Please login manually.");
-//       return res.redirect("/login");
-//     });
-
-//   } catch (err) {
-//     console.log("SIGNUP ERROR ❌", err.message);
-//     req.flash("error", err.message);
-//     res.redirect("/signup");
-//   }
-// });
-// signup
-// router.post("/signup", async (req, res) => {
-//   try {
-//     console.log("SIGNUP DATA 👉", req.body);
-//     const { username, email, password } = req.body;
-    
-//     const newUser = new User({ username, email });
-//     const registeredUser = await User.register(newUser, password);
-
-//     req.login(registeredUser, (err) => {
-//       if (err) {
-//         console.log("LOGIN ERROR ❌", err.message);
-//         req.flash("error", "Login failed after signup");
-//         return res.redirect("/login");
-//       }
-
-//       req.flash("success", "Welcome to Wanderlust!");
-//       res.redirect("/listings");
-//     });
-
-//   } catch (e) {
-//     console.log("SIGNUP ERROR ❌", e.message);
-//     req.flash("error", e.message);
-//     res.redirect("/signup");
-//   }
-// });
-
-// // LOGIN
 router.get("/login", (req, res) => {
   res.render("users/login.ejs");
 });

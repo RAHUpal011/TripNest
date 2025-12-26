@@ -73,18 +73,3 @@ const listingSchema = new Schema({
 
 module.exports = mongoose.model("Listing", listingSchema);
 
-
-
-// const mongoose = require("mongoose");
-
-// const listingSchema = new mongoose.Schema({
-//   title: String,
-//   description: String,
-//   Image:{
-//     type:String,692b0304a79c0741e2d692b0
-//     default:"https:unsplash.com/photos/white-building-photographt-MXbM1NrRqtI",
-//     set:(v) => v===""? "https://unsplash.com/photos/white-building-photographt-MXbM1NrRqtI":v,
-//   },
-//   price: Number,
-//   location: String
-// });
