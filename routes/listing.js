@@ -1,9 +1,11 @@
 const express = require("express");
 const mbxGeocoding = require('@mapbox/mapbox-sdk/services/geocoding');
-const mapToken = process.env.MAPBOX_TOKEN;
+const mapToken  = process.env.MAPBOX_TOKEN
 const geocodingClient = mbxGeocoding({ accessToken: mapToken });
 const router = express.Router();
 const wrapAsync = require("../utils/wrapAsync.js")
+const ExpressError = require("../utils/ExpressError.js")
+const { listingSchema } = require("../schema.js");
 const Listing = require("../models/listing.js");
 const {isLoggedIn , isOwner , validateListing} = require("../middleware.js")
 const multer = require('multer');
@@ -44,25 +46,48 @@ router.get("/:id", wrapAsync(async (req, res) => {
 }));
 
 //create new route
-router.post("/" ,isLoggedIn,validateListing,  upload.single('listing[image]') , wrapAsync(async(req, res)=>{
-  let response = await geocodingClient.forwardGeocode({
-    query: req.body.listing.location,
-    limit: 2
-  }).send()
-  
-    let url = req.file.path;
-    let filename = req.file.filename;
-    const newListing = new Listing(req.body.listing);
-    newListing.owner = req.user._id;
-    newListing.image = {url , filename};
+router.post(
+  "/",
+  isLoggedIn,
+  validateListing,
+  upload.single("listing[image]"),
+  wrapAsync(async (req, res) => {
 
-    newListing.geometry = response.body.features[0].geometry;
+    if (!process.env.MAP_TOKEN) {
+      throw new ExpressError("MAPBOX token missing", 500);
+    }
 
-    let savedListing = await newListing.save();
+    const geocodingClient = mbxGeocoding({
+      accessToken: process.env.MAP_TOKEN,
+    });
+
+    const geoResponse = await geocodingClient
+      .forwardGeocode({
+        query: req.body.listing.location,
+        limit: 1,
+      })
+      .send();
+
+    const listing = new Listing(req.body.listing);
+    listing.owner = req.user._id;
+
+    if (req.file) {
+      listing.image = {
+        url: req.file.path,
+        filename: req.file.filename,
+      };
+    }
+
+    if (geoResponse.body.features.length > 0) {
+      listing.geometry = geoResponse.body.features[0].geometry;
+    }
+
+    await listing.save();
     req.flash("success", "New Listing Created!");
-    res.redirect("/listings")
+    res.redirect("/listings");
   })
 );
+
 
 // Edit Route
 router.get("/:id/edit",  isLoggedIn , isOwner, wrapAsync( async(req ,res)=>{
