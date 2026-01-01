@@ -1,36 +1,30 @@
 const express = require("express");
-const mbxGeocoding = require('@mapbox/mapbox-sdk/services/geocoding');
-const mapToken  = process.env.MAPBOX_TOKEN
-const geocodingClient = mbxGeocoding({ accessToken: mapToken });
 const router = express.Router();
-const wrapAsync = require("../utils/wrapAsync.js")
-const ExpressError = require("../utils/ExpressError.js")
-const { listingSchema } = require("../schema.js");
+
+const mbxGeocoding = require("@mapbox/mapbox-sdk/services/geocoding");
+const wrapAsync = require("../utils/wrapAsync.js");
+const ExpressError = require("../utils/ExpressError.js");
 const Listing = require("../models/listing.js");
-const {isLoggedIn , isOwner , validateListing} = require("../middleware.js")
-const multer = require('multer');
-const {storage} = require("../cloudConfig.js");
-const upload = multer({storage})
+const { isLoggedIn, isOwner, validateListing } = require("../middleware.js");
 
+const multer = require("multer");
+const { storage } = require("../cloudConfig.js");
+const upload = multer({ storage });
 
-// inddex route
-router.get("/",  wrapAsync(async(req , res)=>{
+// INDEX
+router.get("/", wrapAsync(async (req, res) => {
   const allListings = await Listing.find({});
-  res.render("listings/index" , {allListings})
+  res.render("listings/index", { allListings });
 }));
 
-// new route
-router.get("/new" , isLoggedIn, (req , res)=>{
+// NEW
+router.get("/new", isLoggedIn, (req, res) => {
   res.render("listings/new");
 });
 
-
-
-
-// show Route
+// SHOW
 router.get("/:id", wrapAsync(async (req, res) => {
-  const { id } = req.params;
-  const listing = await Listing.findById(id)
+  const listing = await Listing.findById(req.params.id)
     .populate({ path: "reviews", populate: { path: "author" } })
     .populate("owner");
 
@@ -39,13 +33,10 @@ router.get("/:id", wrapAsync(async (req, res) => {
     return res.redirect("/listings");
   }
 
-  listing.views = (listing.views || 0) + 1;
-  await listing.save();
-
   res.render("listings/show", { listing });
 }));
 
-//create new route
+// CREATE
 router.post(
   "/",
   isLoggedIn,
@@ -53,12 +44,14 @@ router.post(
   upload.single("listing[image]"),
   wrapAsync(async (req, res) => {
 
-    if (!process.env.MAP_TOKEN) {
-      throw new ExpressError("MAPBOX token missing", 500);
+    // ✅ SAFE TOKEN CHECK
+    if (!process.env.MAPBOX_TOKEN) {
+      throw new ExpressError("Mapbox access token missing", 500);
     }
 
+    // ✅ Create client ONLY when needed
     const geocodingClient = mbxGeocoding({
-      accessToken: process.env.MAPBox_TOKEN,
+      accessToken: process.env.MAPBOX_TOKEN,
     });
 
     const geoResponse = await geocodingClient
@@ -88,48 +81,44 @@ router.post(
   })
 );
 
-
-// Edit Route
-router.get("/:id/edit",  isLoggedIn , isOwner, wrapAsync( async(req ,res)=>{
-  let {id} = req.params;
-  const listing = await Listing.findById(id);
-  if(!listing){
-    req.flash("error" , "Listing you requested for does not exist!");
-    res.redirect("/listings");
-  }
-  let originalImageUrl = listing.image.url;
-  originalImageUrl = originalImageUrl.replace("/upload", "/upload/w_250");
-  res.render("listings/edit.ejs", { listing , originalImageUrl});
+// EDIT
+router.get("/:id/edit", isLoggedIn, isOwner, wrapAsync(async (req, res) => {
+  const listing = await Listing.findById(req.params.id);
+  res.render("listings/edit", { listing });
 }));
 
-// update Route
-router.put("/:id",
+// UPDATE
+router.put(
+  "/:id",
   isLoggedIn,
   isOwner,
-  validateListing, 
+  validateListing,
   upload.single("listing[image]"),
-  wrapAsync(async(req, res) => {
+  wrapAsync(async (req, res) => {
+    const listing = await Listing.findByIdAndUpdate(
+      req.params.id,
+      req.body.listing,
+      { new: true }
+    );
 
-    console.log("UPDATE BODY:", req.body); // IMPORTANT TESTING
-    const { id } = req.params;
-    delete req.body.listing.geometry;
-    const listing = await Listing.findByIdAndUpdate(id, req.body.listing, { new: true });
     if (req.file) {
-      listing.image = { url: req.file.path, filename: req.file.filename };
+      listing.image = {
+        url: req.file.path,
+        filename: req.file.filename,
+      };
       await listing.save();
     }
+
     req.flash("success", "Listing Updated!");
-    res.redirect(`/listings/${id}`);
+    res.redirect(`/listings/${listing._id}`);
   })
 );
 
-// delete Route
-router.delete("/:id" , isLoggedIn, isOwner, wrapAsync( async(req, res)=>{
-  let {id} = req.params;
-  let deletedListing = await Listing.findByIdAndDelete(id);
-  console.log(deletedListing);
-  req.flash("success" , "Listing was Deleted!")
-  res.redirect("/listings")
+// DELETE
+router.delete("/:id", isLoggedIn, isOwner, wrapAsync(async (req, res) => {
+  await Listing.findByIdAndDelete(req.params.id);
+  req.flash("success", "Listing deleted!");
+  res.redirect("/listings");
 }));
 
 module.exports = router;
