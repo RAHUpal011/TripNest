@@ -58,7 +58,7 @@ router.post(
     }
 
     const geocodingClient = mbxGeocoding({
-      accessToken: process.env.MAP_TOKEN,
+      accessToken: process.env.MAPBox_TOKEN,
     });
 
     const geoResponse = await geocodingClient
