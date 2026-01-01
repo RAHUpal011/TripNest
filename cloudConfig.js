@@ -1,3 +1,5 @@
+console.log("MAPBOX TOKEN IN cloudConfig:", process.env.MAPBOX_TOKEN);
+
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 
