@@ -37,15 +37,13 @@ app.use(express.urlencoded({ extended: true }));
 app.use(methodOverride("_method"));
 app.use(express.static(path.join(__dirname, "public")));
 
-
 const store = MongoStore.create({
-  mongoUrl:process.env.ATLASDB_URL,
+  client: mongoose.connection.getClient(), // ✅ FIX
   crypto: {
-    secret:process.env.SESSION_SECRET ,
+    secret: process.env.SESSION_SECRET,
   },
-  touchAfter: 24 * 3600
+  touchAfter: 24 * 3600,
 });
-
 
 const sessionOptions = {
   store,
