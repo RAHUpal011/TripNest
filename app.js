@@ -1,4 +1,3 @@
-
 if (process.env.NODE_ENV !== "production") {
   require("dotenv").config();
 }
@@ -24,9 +23,6 @@ const userRouter = require("./routes/user");
 
 const dbUrl = process.env.ATLASDB_URL;
 
-mongoose.connect(dbUrl)
-  .then(() => console.log("✅ MongoDB CONNECTED SUCCESSFULLY"))
-  .catch(err => console.log(err));
 
 
 app.set("view engine", "ejs");
@@ -37,36 +33,46 @@ app.use(express.urlencoded({ extended: true }));
 app.use(methodOverride("_method"));
 app.use(express.static(path.join(__dirname, "public")));
 
-const store = MongoStore.create({
-  client: mongoose.connection.getClient(), // ✅ FIX
-  crypto: {
-    secret: process.env.SESSION_SECRET,
-  },
-  touchAfter: 24 * 3600,
-});
-
-const sessionOptions = {
-  store,
-  secret: process.env.SESSION_SECRET,
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    expires: Date.now() + 7 * 24 *60 * 60 * 1000,
-    httpOnly: true,
-    maxAge: 7 * 24 * 60 * 60 * 1000
-  }
-};
-
-app.use(session(sessionOptions));
-app.use(flash());
 
 
-app.use(passport.initialize());
-app.use(passport.session());
-passport.use(new LocalStrategy(User.authenticate()));
+mongoose.connect(dbUrl)
+  .then(() => {
+    console.log("✅ MongoDB CONNECTED SUCCESSFULLY");
 
-passport.serializeUser(User.serializeUser());
-passport.deserializeUser(User.deserializeUser());
+    const store = MongoStore.create({
+      client: mongoose.connection.getClient(),
+      crypto: {
+        secret: process.env.SESSION_SECRET,
+      },
+      touchAfter: 24 * 3600,
+      ttl: false,
+      autoRemove: "disabled",
+    });
+
+    app.use(session({
+      store,
+      secret: process.env.SESSION_SECRET,
+      resave: false,
+      saveUninitialized: false,
+      cookie: {
+        httpOnly: true,
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      },
+    }));
+
+    app.use(flash());
+
+    app.use(passport.initialize());
+    app.use(passport.session());
+
+    passport.use(new LocalStrategy(User.authenticate()));
+    passport.serializeUser(User.serializeUser());
+    passport.deserializeUser(User.deserializeUser());
+  })
+  .catch(err => {
+    console.error("❌ MongoDB connection error:", err);
+  });
+
 
 
 app.use((req, res, next) => {
@@ -77,9 +83,11 @@ app.use((req, res, next) => {
 });
 
 
+
 app.use("/listings", listingRouter);
 app.use("/listings/:id/reviews", reviewsRouter);
 app.use("/", userRouter);
+
 
 
 app.use((req, res, next) => {
@@ -88,10 +96,13 @@ app.use((req, res, next) => {
 });
 
 
+
 app.use((err, req, res, next) => {
-  let { statusCode = 500, message = "Something went wrong" } = err;
+  const { statusCode = 500, message = "Something went wrong" } = err;
   res.status(statusCode).render("error.ejs", { message });
 });
+
+
 
 app.listen(8080, () => {
   console.log("🚀 Server running on port 8080");
