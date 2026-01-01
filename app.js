@@ -39,9 +39,9 @@ app.use(express.static(path.join(__dirname, "public")));
 
 
 const store = MongoStore.create({
-  mongoUrl: process.env.MONGO_URL,
+  mongoUrl:process.env.ATLASDB_URL,
   crypto: {
-    secret: process.env.SECRET
+    secret:process.env.SESSION_SECRET ,
   },
   touchAfter: 24 * 3600
 });

@@ -49,9 +49,9 @@ router.post(
     }
 
     // ✅ Create client ONLY when needed
-    // const geocodingClient = mbxGeocoding({
-    //   accessToken: process.env.MAPBOX_TOKEN,
-    // });
+    const geocodingClient = mbxGeocoding({
+      accessToken: process.env.MAPBOX_TOKEN,
+    });
 
     const geoResponse = await geocodingClient
       .forwardGeocode({
