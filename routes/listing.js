@@ -1,6 +1,5 @@
 const express = require("express");
 const router = express.Router();
-
 const mbxGeocoding = require("@mapbox/mapbox-sdk/services/geocoding");
 const wrapAsync = require("../utils/wrapAsync.js");
 const ExpressError = require("../utils/ExpressError.js");
@@ -50,9 +49,9 @@ router.post(
     }
 
     // ✅ Create client ONLY when needed
-    const geocodingClient = mbxGeocoding({
-      accessToken: process.env.MAPBOX_TOKEN,
-    });
+    // const geocodingClient = mbxGeocoding({
+    //   accessToken: process.env.MAPBOX_TOKEN,
+    // });
 
     const geoResponse = await geocodingClient
       .forwardGeocode({
