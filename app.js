@@ -23,86 +23,70 @@ const userRouter = require("./routes/user");
 
 const dbUrl = process.env.ATLASDB_URL;
 
+// DB
+mongoose.connect(dbUrl)
+  .then(() => console.log("✅ MongoDB CONNECTED SUCCESSFULLY"))
+  .catch(err => console.log(err));
 
-
+// View Engine
+app.engine("ejs", ejsMate);
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
-app.engine("ejs", ejsMate);
 
+// Middleware
 app.use(express.urlencoded({ extended: true }));
 app.use(methodOverride("_method"));
 app.use(express.static(path.join(__dirname, "public")));
 
+// Session Store (FIXED)
+const store = MongoStore.create({
+  mongoUrl: dbUrl,
+  crypto: {
+    secret: process.env.SESSION_SECRET,
+  },
+  touchAfter: 24 * 3600,
+});
 
+const sessionOptions = {
+  store,
+  secret: process.env.SESSION_SECRET,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    httpOnly: true,
+    expires: Date.now() + 7 * 24 * 60 * 60 * 1000,
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  },
+};
 
-mongoose.connect(dbUrl)
-  .then(() => {
-    console.log("✅ MongoDB CONNECTED SUCCESSFULLY");
+app.use(session(sessionOptions));
+app.use(flash());
 
-    const store = MongoStore.create({
-      client: mongoose.connection.getClient(),
-      crypto: {
-        secret: process.env.SESSION_SECRET,
-      },
-      touchAfter: 24 * 3600,
-      ttl: false,
-      autoRemove: "disabled",
-    });
+// Passport
+app.use(passport.initialize());
+app.use(passport.session());
+passport.use(new LocalStrategy(User.authenticate()));
+passport.serializeUser(User.serializeUser());
+passport.deserializeUser(User.deserializeUser());
 
-    app.use(session({
-      store,
-      secret: process.env.SESSION_SECRET,
-      resave: false,
-      saveUninitialized: false,
-      cookie: {
-        httpOnly: true,
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-      },
-    }));
-
-    app.use(flash());
-
-    app.use(passport.initialize());
-    app.use(passport.session());
-
-    passport.use(new LocalStrategy(User.authenticate()));
-    passport.serializeUser(User.serializeUser());
-    passport.deserializeUser(User.deserializeUser());
-  })
-  .catch(err => {
-    console.error("❌ MongoDB connection error:", err);
-  });
-
-
-
+// Locals (FIXED)
 app.use((req, res, next) => {
+  res.locals.currUser = req.user; // ✅ KEY FIX
   res.locals.success = req.flash("success");
   res.locals.error = req.flash("error");
-  res.locals.currUser = req.user;
   next();
 });
 
-
-
+// Routes
 app.use("/listings", listingRouter);
 app.use("/listings/:id/reviews", reviewsRouter);
 app.use("/", userRouter);
 
-
-
-app.use((req, res, next) => {
-  console.log(`${req.method} ${req.path}`);
-  next();
-});
-
-
-
+// Error Handler
 app.use((err, req, res, next) => {
   const { statusCode = 500, message = "Something went wrong" } = err;
   res.status(statusCode).render("error.ejs", { message });
 });
-
-
 
 app.listen(8080, () => {
   console.log("🚀 Server running on port 8080");
