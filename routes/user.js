@@ -9,7 +9,7 @@ router.get("/signup", (req, res) => {
   res.render("users/signup.ejs");
 });
 
-router.post("/signup", async (req, res, next) => {
+router.post("/signup", async (req, res) => {
   try {
     console.log("SIGNUP DATA 👉", req.body);
 
@@ -20,12 +20,15 @@ router.post("/signup", async (req, res, next) => {
 
     req.login(registeredUser, (err) => {
       if (err) {
-        return next(err); // ✅ IMPORTANT
+        console.log("AUTO LOGIN ERROR ❌", err.message);
+        req.flash("error", "Signup successful, please login.");
+        return res.redirect("/login");
       }
 
       req.flash("success", "Welcome to Wanderlust!");
       res.redirect("/listings");
     });
+
   } catch (e) {
     console.log("SIGNUP ERROR ❌", e.message);
     req.flash("error", e.message);
@@ -45,12 +48,13 @@ router.post(
     failureRedirect: "/login",
     failureFlash: true,
   }),
-  async(req, res) => {
+  (req, res) => {
     req.flash("success", "Welcome back to Wanderlust!");
     const redirectUrl = res.locals.redirectUrl || "/listings";
     res.redirect(redirectUrl);
   }
 );
+
 
 // LOGOUT
 router.get("/logout", (req, res, next) => {
