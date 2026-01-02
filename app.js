@@ -43,7 +43,7 @@ const store = MongoStore.create({
   mongoUrl: dbUrl,                 // ✅ CORRECT
   collectionName: "sessions",
   crypto: {
-    secret: process.env.SESSION_SECRET,
+    secret: process.env.SESSION_SECRET || "fallback_secret_for_dev",
   },
   touchAfter: 24 * 3600,
 });
@@ -54,7 +54,7 @@ store.on("error", e => {
 
 const sessionOptions = {
   store,
-  secret: process.env.SESSION_SECRET,
+  secret: process.env.SESSION_SECRET|| "fallback_secret_for_dev",
   resave: false,
   saveUninitialized: false,
   cookie: {
