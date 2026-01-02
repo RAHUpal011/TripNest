@@ -40,11 +40,8 @@ app.use(express.static(path.join(__dirname, "public")));
 
 /* ---------------- SESSION STORE (FIXED) ---------------- */
 const store = MongoStore.create({
-  mongoUrl: dbUrl,                 // ✅ CORRECT
+  mongoUrl: dbUrl,
   collectionName: "sessions",
-  crypto: {
-    secret: process.env.SESSION_SECRET || "fallback_secret_for_dev",
-  },
   touchAfter: 24 * 3600,
 });
 
