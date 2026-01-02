@@ -13,7 +13,7 @@ const session = require("express-session");
 const MongoStore = require("connect-mongo");
 const passport = require("passport");
 const flash = require("connect-flash");
-const LocalStrategy = require("passport-local").Strategy;
+const LocalStrategy = require("passport-local");
 
 const User = require("./models/user");
 
@@ -23,28 +23,33 @@ const userRouter = require("./routes/user");
 
 const dbUrl = process.env.ATLASDB_URL;
 
-// DB
+/* ---------------- MONGODB ---------------- */
 mongoose.connect(dbUrl)
   .then(() => console.log("✅ MongoDB CONNECTED SUCCESSFULLY"))
   .catch(err => console.log(err));
 
-// View Engine
+/* ---------------- VIEW ENGINE ---------------- */
 app.engine("ejs", ejsMate);
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 
-// Middleware
+/* ---------------- MIDDLEWARE ---------------- */
 app.use(express.urlencoded({ extended: true }));
 app.use(methodOverride("_method"));
 app.use(express.static(path.join(__dirname, "public")));
 
-// Session Store (FIXED)
+/* ---------------- SESSION STORE (FIXED) ---------------- */
 const store = MongoStore.create({
-  mongoUrl: dbUrl,
+  mongoUrl: dbUrl,                 // ✅ CORRECT
+  collectionName: "sessions",
   crypto: {
     secret: process.env.SESSION_SECRET,
   },
   touchAfter: 24 * 3600,
+});
+
+store.on("error", e => {
+  console.log("SESSION STORE ERROR", e);
 });
 
 const sessionOptions = {
@@ -62,31 +67,33 @@ const sessionOptions = {
 app.use(session(sessionOptions));
 app.use(flash());
 
-// Passport
+/* ---------------- PASSPORT ---------------- */
 app.use(passport.initialize());
 app.use(passport.session());
+
 passport.use(new LocalStrategy(User.authenticate()));
 passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
 
-// Locals (FIXED)
+/* ---------------- GLOBAL VARIABLES ---------------- */
 app.use((req, res, next) => {
-  res.locals.currUser = req.user; // ✅ KEY FIX
+  res.locals.currUser = req.user;   // ✅ FIXED
   res.locals.success = req.flash("success");
   res.locals.error = req.flash("error");
   next();
 });
 
-// Routes
+/* ---------------- ROUTES ---------------- */
 app.use("/listings", listingRouter);
 app.use("/listings/:id/reviews", reviewsRouter);
 app.use("/", userRouter);
 
-// Error Handler
+/* ---------------- ERROR HANDLER ---------------- */
 app.use((err, req, res, next) => {
   const { statusCode = 500, message = "Something went wrong" } = err;
   res.status(statusCode).render("error.ejs", { message });
 });
+
 
 app.listen(8080, () => {
   console.log("🚀 Server running on port 8080");
