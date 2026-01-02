@@ -12,17 +12,17 @@ router.get("/signup", (req, res) => {
 router.post("/signup", async (req, res, next) => {
   try {
     console.log("SIGNUP DATA 👉", req.body);
+
     const { username, email, password } = req.body;
-    const newUser = new User({ email, username });
+
+    const newUser = new User({ username, email });
     const registeredUser = await User.register(newUser, password);
-    console.log(registeredUser);
 
     req.login(registeredUser, (err) => {
       if (err) {
-        console.log("LOGIN ERROR ❌", err.message);
-        req.flash("error", "Auto login failed. Please login manually.");
-        return res.redirect("/login");
+        return next(err); // ✅ IMPORTANT
       }
+
       req.flash("success", "Welcome to Wanderlust!");
       res.redirect("/listings");
     });
@@ -32,6 +32,7 @@ router.post("/signup", async (req, res, next) => {
     res.redirect("/signup");
   }
 });
+
 
 router.get("/login", (req, res) => {
   res.render("users/login.ejs");
