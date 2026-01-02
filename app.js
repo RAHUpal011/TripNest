@@ -80,6 +80,11 @@ app.use((req, res, next) => {
   next();
 });
 
+app.get("/", (req, res) => {
+  res.redirect("/listings");
+});
+
+
 /* ---------------- ROUTES ---------------- */
 app.use("/listings", listingRouter);
 app.use("/listings/:id/reviews", reviewsRouter);
